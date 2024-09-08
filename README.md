@@ -15,7 +15,7 @@ The AP Art History (APAH) project is a comprehensive online resource designed to
 
 To get started with the APAH website:
 
-1. **Visit the Website**: Navigate to the [APAH website URL](https://apah-client.vercel.app/).
+1. **Visit the Website**: Navigate to the [APAH website URL](https://historythroughart.com/).
 2. **Explore Multimedia Content**: Browse through the videos, notes, and pictures available.
 
 ## Technical Details
