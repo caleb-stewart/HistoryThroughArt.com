@@ -10,7 +10,6 @@ const Flashcards = () => {
   const [selectedUnits, setSelectedUnits] = useState([]); // Units to include
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showSettings, setShowSettings] = useState(false); // Toggle settings modal
-  const [showBanner, setShowBanner] = useState(true); // State to show/hide banner
 
   // Shuffle flashcards based on unit and exclusions
   const shuffleDeck = useCallback(() => {
@@ -86,10 +85,6 @@ const Flashcards = () => {
     }
   };
 
-  const closeBanner = () => {
-    setShowBanner(false);
-  };
-
   if (deck.length === 0) {
     return (
       <div className="flashcards-container">
@@ -101,33 +96,20 @@ const Flashcards = () => {
     );
   }
 
+  const toBCE = (date) => {
+    date = date.split('/');
+    if(date.length === 2) {
+        date[0] = date[0].startsWith('-') ? (date[0].slice(1) + ' BCE') : date[0];
+        date[1] = date[1].startsWith('-') ? (date[1].slice(1) + ' BCE') : date[1];
+        return date.join(' - ');
+    }
+
+    return date[0].startsWith('-') ? (date.slice(1) + ' BCE') : date;
+  }
+
   return (
     <div className="flashcards-container">
-      {/* Popup banner */}
-      {showBanner && (
-        <div className="popup-banner">
-          <strong className="blurb">New Flashcards Page!</strong>
-          <p className="blurb">
-            - Select units you want to practice and cards you want to exclude
-            with settings button in top right.
-          </p>
-          <p className="blurb">
-            - Cards are removed from deck when marked as "Great".
-          </p>
-          <p className="blurb">
-            - Resetting the deck puts all "Great" cards back in and shuffles the
-            deck
-          </p>
-          <p className="blurb">
-            - Marking a card as "Bad" puts a duplicate of it in the deck so you
-            have to mark it as "Great" twice.
-          </p>
-          <button className="close-banner" onClick={closeBanner}>
-            <i className="fas fa-times-circle"></i> Close Popup
-          </button>
-        </div>
-      )}
-        <h1 className="title">Flashcards</h1>
+      <h1 className="title">Flashcards</h1>
       <div className="progress">{deck.length} cards remaining</div>
       <div
         className={`flashcard ${isFlipped ? "flipped" : ""}`}
@@ -156,7 +138,7 @@ const Flashcards = () => {
                   Artist/Culture:{" "}
                   {deck[currentCard].artist_culture || "Unknown"}
                 </p>
-                <p>Date: {deck[currentCard].date}</p>
+                <p>Date: {toBCE(deck[currentCard].date)}</p>
                 <p>Materials: {deck[currentCard].materials}</p>
               </>
             )}
