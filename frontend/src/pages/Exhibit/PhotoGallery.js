@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import "./Exhibit.css";
-import artPiecesData from "../../Data/artworks.json";
+import artPiecesData from "../../data/artworks.json";
 import "./PhotoSelectorIcons";
 import PhotoSelectorIcons from "./PhotoSelectorIcons";
 
@@ -10,7 +10,7 @@ function PhotoGallery({ id }) {
   const [artImages, setArtImages] = useState([]);
   const [slideIndex, setSlideIndex] = useState(1);
   const slideRefs = useRef([]);
-  const [, setModalDimensions] = useState({
+  const [modalDimensions, setModalDimensions] = useState({
     width: "90%",
     height: "auto",
   });
@@ -110,6 +110,11 @@ function PhotoGallery({ id }) {
     document.body.removeChild(link);
   };
 
+  const handleModalClick = (event) => {
+    //openModal(artImages[slideIndex]);
+    event.stopPropagation();
+  };
+
   const currentImageSrc = useCallback(() => {
     return getImagePath(artImages[slideIndex - 1]);
   }, [artImages, slideIndex]); // Add the necessary dependencies here
@@ -134,24 +139,27 @@ function PhotoGallery({ id }) {
   }, [slideIndex, currentImageSrc]);
 
   return (
-    <div className="w3-container w3-center ">
+    <div className="w3-container w3-center">
       <div className="w3-display-container image-container">
         <div className="image-wrapper">
           {artImages.map((imageName, index) => (
             <div
               key={index}
-              className="image-slide flex justify-center items-center h-full w-full"
+              className="image-slide"
               style={{
-                display: index === slideIndex - 1 ? "flex" : "none",
+                display: index === slideIndex - 1 ? "block" : "none",
               }}
               ref={(el) => (slideRefs.current[index] = el)}
             >
-              <img
-                src={getImagePath(imageName)}
-                alt={`Art piece ${index + 1}`}
-                className="max-h-full max-w-full object-contain mx-auto"
-                onClick={() => openModal(imageName)}
-              />
+              {/* Wrapper with rounded border */}
+              <div className="rounded-lg border border-transparent overflow-hidden inline-block">
+                <img
+                  src={getImagePath(imageName)}
+                  alt={`Art piece ${index + 1}`}
+                  className="w3-image image"
+                  onClick={() => openModal(imageName)}
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -171,29 +179,32 @@ function PhotoGallery({ id }) {
         </button>
       </div>
 
+      {/* Modal */}
       <div
         id="modal01"
-        className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 ${
-          modalStyle === "block" ? "flex" : "hidden"
-        }`}
+        className={`w3-modal`}
         onClick={closeModal}
+        style={{ display: modalStyle }}
       >
-        <div
-          className="relative max-w-full max-h-full bg-white rounded shadow-lg p-4"
-          onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
-        >
+        <div className="w3-modal-content-custom modal-content">
           <img
             id="img01"
-            className="object-contain max-h-[70vh] max-w-[90vw] w-auto"
+            className="w3-animate-zoom modal-image"
             src={currentImageSrc()}
             alt="Modal Art"
             style={{
-              display: modalStyle === "block" ? "block" : "none",
-              margin: modalStyle === "block" ? "auto" : "0",
-              transform: modalStyle === "block" ? "translate(0, 0)" : "none",
+              maxHeight: `${vhPercentModalImage}vh`, // 70% of the viewport height
+              minWidth: modalDimensions.width,
             }}
+            onClick={handleModalClick}
           />
-          <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+        </div>
+        <div className="w3-container w3-bottom">
+          <div
+            className="w3-bar"
+            onClick={handleModalClick}
+            style={{ minWidth: "100px" }}
+          >
             <PhotoSelectorIcons
               artImages={artImages}
               slideIndex={slideIndex}
