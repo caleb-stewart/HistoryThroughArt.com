@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// App.js
+import React, { useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import "./App.css";
 import "./w3.css";
@@ -21,13 +22,22 @@ const NewFeatureModal = ({ onClose }) => {
         <button className="modal-close-button" onClick={onClose}>
           &times;
         </button>
-        <h2>Please Submit Feedback!</h2>
-        <p>
-          Tomorrow, Jonah will be visiting during Korus' class to talk about
-          what you like and dislike about the site, please fill out the feedback
-          form (in the bottom right corner) tonight with any questions, feature
-          improvements, or issues so that he can prepare what to talk about!
-        </p>
+        <h2>New Features!</h2>
+
+        <ul className="list-disc list-inside pl-4 text-left">
+          <li>Nicer looking search bar</li>
+          <li>Sorting and Filtering stays set when you refresh the page</li>
+          <li>Default to Korus Sort</li>
+          <li>
+            Pronunciation of art titles (not perfect on non-english words)
+          </li>
+          <li>
+            Navigation buttons to go forward and back at the bottom of each
+            exhibit (based on Korus order)
+          </li>
+          <li>Bug fixes on dates and photos</li>
+          <li>Attempted to fix logo problem (lmk)</li>
+        </ul>
       </div>
     </div>
   );
@@ -37,23 +47,15 @@ function App() {
   const [menuOpened, setMenuOpened] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    // Check local storage to see if the modal has been dismissed
-    const isModalDismissed = localStorage.getItem("newFeatureModalDismissed1");
-    if (!isModalDismissed) {
-      setShowModal(false);
-    }
-  }, []);
-
   const handleCloseModal = () => {
     setShowModal(false);
-    localStorage.setItem("newFeatureModalDismissed", "true");
+    localStorage.setItem("newFeatureModalDismissed2", "true");
   };
 
   return (
     <>
       <NavBar menuOpened={menuOpened} setMenuOpened={setMenuOpened} />
-      <div className={`spacer ${menuOpened ? "spaceopen" : "spaceclosed"}`}>
+      <div>
         {showModal && <NewFeatureModal onClose={handleCloseModal} />}
         <Routes>
           <Route path="/" element={<Home />} />
