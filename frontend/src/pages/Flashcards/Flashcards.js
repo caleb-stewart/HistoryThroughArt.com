@@ -54,11 +54,17 @@ const Flashcards = () => {
   const [nextCardReady, setNextCardReady] = useState(true);
   const [showDuplicateMessage, setShowDuplicateMessage] = useState(false);
   const [isShuffled, setIsShuffled] = useState(false);
+  // eslint-disable-next-line no-unused-vars
+  const [preloadedImages, setPreloadedImages] = useState([]);
   
   // Refs for touch handling
   const touchStartRef = useRef({ x: 0, y: 0 });
   const touchEndRef = useRef({ x: 0, y: 0 });
   const cardRef = useRef(null);
+
+  // Add state for undo history
+  const [undoHistory, setUndoHistory] = useState([]);
+  const MAX_UNDO_STEPS = 3;
 
   // Get cards that are due by today's date or the selected date
   const getCardsDueByDate = useCallback((date) => {
@@ -291,8 +297,85 @@ const Flashcards = () => {
     }
   }, [isTransitioning, isFlipped]);
 
+  // Add function to preload images
+  const preloadImages = useCallback((cardIndexes) => {
+    const imagePromises = cardIndexes.map((index) => {
+      if (index >= 0 && index < deck.length) {
+        const card = deck[index];
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(card.id);
+          img.onerror = () => reject(card.id);
+          img.src = require(`../../artImages/${card.image[0]}`);
+        });
+      }
+      return Promise.resolve(null);
+    });
+    
+    Promise.all(imagePromises)
+      .then(results => {
+        setPreloadedImages(prev => [...prev, ...results.filter(id => id !== null)]);
+      })
+      .catch(err => console.error("Error preloading images:", err));
+  }, [deck]);
+
+  // Preload next few images when deck or current card changes
+  useEffect(() => {
+    if (deck.length > 0) {
+      // Preload the next 3 images (or fewer if near the end of the deck)
+      const nextIndexes = [];
+      for (let i = 1; i <= 3; i++) {
+        const nextIndex = (currentCard + i) % deck.length;
+        if (nextIndex !== currentCard) {
+          nextIndexes.push(nextIndex);
+        }
+      }
+      preloadImages(nextIndexes);
+    }
+  }, [deck, currentCard, preloadImages]);
+
+  // Function to save current state to history before making changes
+  const saveStateToHistory = useCallback(() => {
+    // Create a snapshot of the current state
+    const currentState = {
+      deck: [...deck],
+      currentCard: currentCard,
+      isFlipped: isFlipped
+    };
+    
+    // Add to history, keeping only the most recent MAX_UNDO_STEPS
+    setUndoHistory(prev => {
+      const newHistory = [currentState, ...prev];
+      return newHistory.slice(0, MAX_UNDO_STEPS);
+    });
+  }, [deck, currentCard, isFlipped]);
+
+  // Function to perform undo
+  const handleUndo = () => {
+    if (undoHistory.length === 0 || isTransitioning) return;
+    
+    // Get the most recent state from history
+    const [previousState, ...remainingHistory] = undoHistory;
+    
+    // Set all states back to their previous values
+    setDeck(previousState.deck);
+    setCurrentCard(previousState.currentCard);
+    setIsFlipped(previousState.isFlipped);
+    
+    // Remove the used state from history
+    setUndoHistory(remainingHistory);
+    
+    // Show a notification that we've undone an action
+    setIsSaving(true);
+    setTimeout(() => setIsSaving(false), 1000);
+  };
+
+  // Update handleAction to save state before making changes
   const handleAction = useCallback((action) => {
     if (isTransitioning) return;
+
+    // Save current state to history before making changes
+    saveStateToHistory();
 
     // Start transition
     setIsTransitioning(true);
@@ -318,7 +401,7 @@ const Flashcards = () => {
       // Hide the current card first (with animation)
       setNextCardReady(false);
       
-      // Delay before processing the deck update
+      // Delay before processing the deck update - make this faster
       setTimeout(() => {
         let updatedDeck = [...deck];
         let nextCardIndex = currentCard;
@@ -327,7 +410,7 @@ const Flashcards = () => {
           // Remove current card from deck
           updatedDeck = updatedDeck.filter((_, index) => index !== currentCard);
           
-          // If we removed the last card in the deck
+          // If we removed the last card in the deck or the current card was the last one
           if (updatedDeck.length === 0) {
             // No cards left, just end the transition
             setIsTransitioning(false);
@@ -365,13 +448,19 @@ const Flashcards = () => {
         setCardAnimation('');
         
         // Short delay before showing next card with entrance animation
+        // Make this much faster
         setTimeout(() => {
+          // Ensure the card is fully reset before making it visible
+          if (cardRef.current) {
+            cardRef.current.style.transform = 'translateX(0) translateY(0) rotate(0)';
+          }
+          
           setNextCardReady(true);
           setIsTransitioning(false);
         }, 10);
       }, 250); // Make the exit animation time shorter
     }
-  }, [isTransitioning, deck, currentCard]);
+  }, [isTransitioning, deck, currentCard, saveStateToHistory]);
 
   const resetDeck = (shouldShuffle = false) => {
     console.log("Resetting deck, shuffle:", shouldShuffle);
@@ -402,6 +491,23 @@ const Flashcards = () => {
 
   const toggleSettings = () => {
     setShowSettings(!showSettings);
+  };
+
+  const getContentAreaName = (unitNumber) => {
+    const contentAreas = {
+      1: "Global Prehistory",
+      2: "Ancient Mediterranean",
+      3: "Early Europe and Colonial Americas",
+      4: "Later Europe and Americas",
+      5: "Indigenous Americas",
+      6: "Africa",
+      7: "West and Central Asia",
+      8: "South, East, and Southeast Asia",
+      9: "The Pacific",
+      10: "Global Contemporary"
+    };
+    
+    return contentAreas[unitNumber] || `Unit ${unitNumber}`;
   };
 
   const handleUnitSelection = (event) => {
@@ -685,20 +791,25 @@ const Flashcards = () => {
                     {cardToShow.id}.{" "}
                     <strong>{cardToShow.name}</strong>
                   </h3>
-                  <p>Location: {cardToShow.location}</p>
-                  <p>
-                    Artist/Culture:{" "}
-                    {cardToShow.artist_culture || "Unknown"}
-                  </p>
-                  <p>Date: {toBCE(cardToShow.date)}</p>
-                  <p>Materials: {cardToShow.materials}</p>
-                  <Link
-                    to={`/exhibit?id=${cardToShow.id}`}
-                    className="full-page-button"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    View Details
-                  </Link>
+                  <div className="flashcard-content">
+                    <p>Location: {cardToShow.location}</p>
+                    <p>
+                      Artist/Culture:{" "}
+                      {cardToShow.artist_culture || "Unknown"}
+                    </p>
+                    <p>Date: {toBCE(cardToShow.date)}</p>
+                    <p>Materials: {cardToShow.materials}</p>
+                    <p>Content Area: {getContentAreaName(cardToShow.unit)}</p>
+                  </div>
+                  <div className="details-link-container">
+                    <Link
+                      to={`/exhibit?id=${cardToShow.id}`}
+                      className="full-page-button back-side"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      View Details
+                    </Link>
+                  </div>
                 </>
               )}
             </div>
@@ -730,6 +841,17 @@ const Flashcards = () => {
         >
           Great
           <span className="key-hint">3</span>
+        </button>
+      </div>
+      
+      {/* Add undo button */}
+      <div className="undo-container">
+        <button 
+          className="undo-button" 
+          onClick={handleUndo}
+          disabled={isTransitioning || undoHistory.length === 0}
+        >
+          Undo ({undoHistory.length}/{MAX_UNDO_STEPS})
         </button>
       </div>
       
@@ -777,8 +899,8 @@ const Flashcards = () => {
         </div>
         
         <div className="unit-selection">
-          <h4>Units to Include</h4>
-          <p className="unit-hint">No selection means all units</p>
+          <h4>Content Areas to Include</h4>
+          <p className="unit-hint">No selection means all content areas</p>
           {[...new Set(artPiecesData.map((item) => item.unit))].map((unit) => (
             <label key={unit}>
               <input
@@ -787,7 +909,7 @@ const Flashcards = () => {
                 onChange={handleUnitSelection}
                 checked={selectedUnits.includes(unit)}
               />
-              Unit {unit}
+              {getContentAreaName(unit)}
             </label>
           ))}
         </div>

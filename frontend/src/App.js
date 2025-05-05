@@ -14,6 +14,10 @@ import ArtGallery from "./pages/ArtGallery/ArtGallery";
 import Calendar from "./pages/Calendar/Calendar";
 import Tutorial from "./pages/Tutorial/Tutorial";
 import Flashcards from "./pages/Flashcards/Flashcards";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import DebugPage from "./pages/Admin/DebugPage";
+import SupabaseDebug from "./pages/SupabaseDebug";
+import ChartTester from "./components/ChartTester";
 
 const NewFeatureModal = ({ onClose }) => {
   // Define styles to ensure visibility
@@ -78,11 +82,8 @@ const NewFeatureModal = ({ onClose }) => {
         <h2 style={modalStyles.header}>New Features!</h2>
         
         <ul style={modalStyles.list}>
-          <li style={modalStyles.listItem}>Flashcards now support swiping gestures on mobile (left=Bad, up=Good, right=Great)</li>
-          <li style={modalStyles.listItem}>Added keyboard shortcuts for flashcards (1=Bad, 2=Good, 3=Great, Space=Flip)</li>
-          <li style={modalStyles.listItem}>When rating as "Bad", a duplicate card is added for review</li>
-          <li style={modalStyles.listItem}>Improved flashcard animations and transitions</li>
-          <li style={modalStyles.listItem}>Made flashcard layout better on mobile devices</li>
+          <li style={modalStyles.listItem}>Added bulk image download functionality in Exhibit and PhotoGallery</li>
+          <li style={modalStyles.listItem}>Fixed Flashcard details bug</li>
         </ul>
       </div>
     </div>
@@ -91,7 +92,7 @@ const NewFeatureModal = ({ onClose }) => {
 
 function App() {
   // Use a simpler approach: check localStorage at startup only
-  const hasSeenModal = localStorage.getItem("newFeaturesModalSeen1") === "true";
+  const hasSeenModal = localStorage.getItem("newFeaturesModalSeen2") === "true";
   
   // Debug what's happening with localStorage
   console.log("Initial state check:", { hasSeenModal });
@@ -107,7 +108,7 @@ function App() {
   const handleCloseModal = () => {
     console.log("Modal closed by user - setting localStorage");
     setShowModal(false);
-    localStorage.setItem("newFeaturesModalSeen1", "true");
+    localStorage.setItem("newFeaturesModalSeen2", "true");
   };
 
   // Update our render
@@ -126,6 +127,10 @@ function App() {
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/tutorial" element={<Tutorial />} />
           <Route path="/flashcards" element={<Flashcards />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/debug" element={<DebugPage />} />
+          <Route path="/admin/supabase-debug" element={<SupabaseDebug />} />
+          <Route path="/admin/chart-test" element={<ChartTester />} />
         </Routes>
       </div>
       <button
